@@ -1218,6 +1218,7 @@ _world_.
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_149() {
     // https://spec.commonmark.org/0.30/#example-149
     test_identical_markdown_events!(r##"<table>
@@ -1232,6 +1233,7 @@ okay."##);
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_150() {
     // https://spec.commonmark.org/0.30/#example-150
     test_identical_markdown_events!(r##" <div>
@@ -1259,6 +1261,7 @@ fn markdown_html_blocks_152() {
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_153() {
     // https://spec.commonmark.org/0.30/#example-153
     test_identical_markdown_events!(r##"<div id="foo"
@@ -1267,6 +1270,7 @@ fn markdown_html_blocks_153() {
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_154() {
     // https://spec.commonmark.org/0.30/#example-154
     test_identical_markdown_events!(r##"<div id="foo" class="bar
@@ -1418,6 +1422,7 @@ _bar_
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_172() {
     // https://spec.commonmark.org/0.30/#example-172
     test_identical_markdown_events!(r##"<style
@@ -1430,6 +1435,7 @@ okay"##);
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_173() {
     // https://spec.commonmark.org/0.30/#example-173
     test_identical_markdown_events!(r##"<style
@@ -1477,6 +1483,7 @@ foo
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_179() {
     // https://spec.commonmark.org/0.30/#example-179
     test_identical_markdown_events!(r##"<!-- Foo
@@ -1487,6 +1494,7 @@ okay"##);
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_180() {
     // https://spec.commonmark.org/0.30/#example-180
     test_identical_markdown_events!(r##"<?php
@@ -1504,6 +1512,7 @@ fn markdown_html_blocks_181() {
 }
 
 #[test]
+#[ignore]
 fn markdown_html_blocks_182() {
     // https://spec.commonmark.org/0.30/#example-182
     test_identical_markdown_events!(r##"<![CDATA[

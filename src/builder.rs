@@ -73,6 +73,12 @@ impl FormatterBuilder {
         self
     }
 
+    /// Set the configuration based on Steven Hé (Sīchàng)'s opinion.
+    pub fn sichanghe_config(&mut self) -> &mut Self {
+        self.config = Config::sichanghe_opinion();
+        self
+    }
+
     /// Internal setter for Config. Used for testing
     #[cfg(test)]
     pub(crate) fn config(&mut self, config: Config) -> &mut Self {
@@ -83,7 +89,9 @@ impl FormatterBuilder {
 
 impl std::fmt::Debug for FormatterBuilder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FormatterBuilder")
+        f.debug_struct("FormatterBuilder")
+            .field("config", &self.config)
+            .finish()
     }
 }
 

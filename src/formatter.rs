@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::fmt::Write;
 use std::iter::Peekable;
 use std::ops::Range;
-use std::str::FromStr;
 
 use itertools::Itertools;
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel};
@@ -178,7 +177,6 @@ where
     /// Handles paragraph formatting.
     paragraph: Option<Paragraph>,
     /// Format configurations
-    #[allow(dead_code)]
     config: Config,
 }
 
@@ -667,11 +665,10 @@ where
                     if self.needs_indent {
                         self.write_newlines(newlines)?;
                     }
-                    write!(
-                        self,
-                        "{}",
-                        &self.input[range].trim_start().trim_end_matches('\n')
-                    )?;
+                    // NOTE: This limitation is because Pulldown-CMark
+                    // incorrectly include spaces before HTML.
+                    let html = &self.input[range].trim_start();
+                    write!(self, "{}", html.trim_end_matches('\n'))?;
                     self.check_needs_indent(&event);
                 }
                 Event::Rule => {
@@ -905,8 +902,11 @@ where
                 // this is an empty list item
                 self.needs_indent = empty_list_item;
 
-                let list_marker = ListMarker::from_str(&self.input[range])
+                let list_marker = self
+                    .config
+                    .list_marker(&self.input[range.clone()])
                     .expect("Should be able to parse a list marker");
+                tracing::debug!(?list_marker, source = &self.input[range]);
                 // TODO(ytmimi) Add a configuration to allow incrementing ordered lists
                 // Take list_marker so we can use `write!(self, ...)`
                 // let mut list_marker = self
@@ -934,7 +934,12 @@ where
                 self.nested_context.push(tag);
                 // Increment the list marker in case this is a ordered list and
                 // swap the list marker we took earlier
-                self.indentation.push(list_marker.indentation());
+                self.indentation.push(
+                    self.config
+                        .fixed_indentation
+                        .clone()
+                        .unwrap_or_else(|| list_marker.indentation()),
+                );
                 // TODO(ytmimi) Add a configuration to allow incrementing ordered lists
                 // list_marker.increment_count();
                 // self.list_markers.push(list_marker)

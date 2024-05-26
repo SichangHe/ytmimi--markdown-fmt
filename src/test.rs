@@ -1,11 +1,14 @@
 use crate::config::Config;
-use crate::{rewrite_markdown, rewrite_markdown_with_builder, FormatterBuilder};
+use crate::{rewrite_markdown_sichanghe_opinion, rewrite_markdown_with_builder, FormatterBuilder};
 use rust_search::SearchBuilder;
 use std::path::{Path, PathBuf};
 
 impl FormatterBuilder {
     pub fn from_leading_config_comments(input: &str) -> Self {
-        let mut config = Config::default();
+        let mut config = Config {
+            max_width: None,
+            ..Config::sichanghe_opinion()
+        };
 
         let opener = "<!-- :";
         let closer = "-->";
@@ -62,7 +65,7 @@ fn main() {}
 ```
 [there!]: htts://example.com "Yoooo"
 "##;
-    let rewrite = rewrite_markdown(input).unwrap();
+    let rewrite = rewrite_markdown_sichanghe_opinion(input).unwrap();
     assert_eq!(rewrite, expected)
 }
 

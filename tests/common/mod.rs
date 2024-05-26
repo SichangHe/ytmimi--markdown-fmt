@@ -10,12 +10,20 @@ pub fn check_formatted_markdown<'a>(
     formatted.into()
 }
 
+pub fn init_tracing() {
+    _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_ansi(true)
+        .try_init();
+}
+
 #[macro_export]
 macro_rules! test {
     ($input:expr) => {
         test!($input, $input)
     };
     ($input:expr, $output:expr) => {{
+        $crate::common::init_tracing();
         let formatted = $crate::common::check_formatted_markdown($input, $output);
         if $input != $output {
             // Perform an idempotency check on the formatted markdown
