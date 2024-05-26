@@ -66,6 +66,7 @@
 //! ````
 
 use std::borrow::Cow;
+use std::collections::VecDeque;
 use std::fmt::Write;
 use std::iter::Peekable;
 use std::num::ParseIntError;
@@ -73,9 +74,9 @@ use std::ops::Range;
 use std::str::FromStr;
 
 use itertools::{EitherOrBoth, Itertools};
-use pulldown_cmark::Alignment;
-use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel};
-use pulldown_cmark::{LinkDef, LinkType, Options, Parser, Tag};
+use pulldown_cmark::{
+    Alignment, CodeBlockKind, CowStr, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd,
+};
 use textwrap::Options as TextWrapOptions;
 use unicode_segmentation::UnicodeSegmentation;
 

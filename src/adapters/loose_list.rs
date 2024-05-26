@@ -1,6 +1,4 @@
-use pulldown_cmark::{Event, Tag};
-use std::collections::VecDeque;
-use std::iter::Peekable;
+use super::*;
 
 /// Conveniently turn any iterator that returns (Event, Range) into a LooseListAdapter
 pub(crate) trait LooseListExt<'input, I>
@@ -126,7 +124,7 @@ where
             | Event::Code(_)
             | Event::FootnoteReference(_)
             | Event::TaskListMarker(_)
-            | Event::Start(Tag::Link(..)) => true,
+            | Event::Start(Tag::Link { .. }) => true,
             Event::Html(text) => is_single_html_tag(text),
             _ => false,
         }
@@ -149,7 +147,7 @@ macro_rules! push_end_paragraph {
             let full_range = paragraph_range.start..$end;
             *paragraph_range = full_range.clone();
 
-            let paragraph_end = Event::End(Tag::Paragraph);
+            let paragraph_end = Event::End(TagEnd::Paragraph);
             $stashed_events.push_back((paragraph_end, full_range))
         } else {
             panic!("We should have stashed a Start(Paragraph) event");
@@ -218,7 +216,7 @@ where
                         }
                     }
                 }
-                Event::End(Tag::Item) => {
+                Event::End(TagEnd::Item) => {
                     self.stashed_events
                         .push_back((current_event, current_range));
 
@@ -230,11 +228,11 @@ where
                     }
                 }
                 Event::End(
-                    Tag::Heading(..)
-                    | Tag::List(_)
-                    | Tag::BlockQuote
-                    | Tag::CodeBlock(_)
-                    | Tag::Table(_),
+                    TagEnd::Heading(..)
+                    | TagEnd::List(_)
+                    | TagEnd::BlockQuote
+                    | TagEnd::CodeBlock
+                    | TagEnd::Table,
                 ) => {
                     self.stashed_events
                         .push_back((current_event, current_range));
@@ -256,7 +254,7 @@ where
                     // Match on events that could interrupt a paragraph, and if we're currently
                     // converting a "tight" list to a "loose" list, then push an `End(Paragraph)`
                     match self.inner.peek() {
-                        Some((Event::End(Tag::Item), _)) => {
+                        Some((Event::End(TagEnd::Item), _)) => {
                             // NOTE that we pop off of the loose_list_stack instead of peeking at
                             // it like we do in the other arms
                             if let Some(Some(index)) = self.loose_list_stack.pop() {
@@ -265,9 +263,9 @@ where
                         }
                         Some((
                             Event::Start(
-                                Tag::Heading(..)
+                                Tag::Heading { .. }
                                 | Tag::List(_)
-                                | Tag::BlockQuote
+                                | Tag::BlockQuote(_)
                                 | Tag::CodeBlock(_)
                                 | Tag::Table(_),
                             ),
