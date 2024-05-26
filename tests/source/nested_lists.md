@@ -8,6 +8,7 @@ Not a list.
         - Escaped, not nest level 2.
         - Another escaped, not nest level 2.
             - Escaped, not nest level 3.
+-
 - Weird nest level 1.
         - Escaped, not nest level 3.
     - Nest level 2.

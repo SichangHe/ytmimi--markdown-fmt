@@ -45,7 +45,7 @@ fn main() {}
 "##;
     let expected = r##"# Hello World!
 1. Hey [there!]
-2. what's going on?
+1. what's going on?
 
 <p> and a little bit of HTML </p>
 
@@ -105,6 +105,10 @@ fn idempotence_test() {
         let formatted_input = rewrite_markdown_with_builder(&input, builder).unwrap();
 
         if formatted_input != input {
+            eprintln!(
+                "Idenpotency does not hold for {}. Formatted:\n{formatted_input}\n",
+                file.display()
+            );
             errors += 1;
         }
     }
