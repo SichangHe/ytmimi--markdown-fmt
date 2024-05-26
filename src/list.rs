@@ -9,6 +9,7 @@ use std::num::ParseIntError;
 //     character or a ) character. (The reason for the length limit is that with 10 digits we
 //     start seeing integer overflows in some browsers.)
 //
+#[rustfmt::skip]
 const LIST_INDENTATION: &str = "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ";
 const ZERO_PADDING: &str = "00000000000000000000";
 

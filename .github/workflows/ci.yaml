@@ -13,16 +13,18 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
     - name: Install Nightly Rust Toolchain
       run: rustup install --no-self-update --profile minimal nightly
     - name: Run tests
-      run: cargo +nightly test --features gen-tests
+      run: cargo +nightly test
 
   format_check:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
     - name: Install Nightly Rust Toolchain
       run: rustup component add --toolchain nightly rustfmt
     - name: Format Checks
@@ -33,6 +35,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
     - name: Install Nightly Rust Toolchain
       run: rustup component add --toolchain nightly clippy
     - name: Clippy Checks
@@ -43,6 +46,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
     - name: Install MSRV (1.74.0) Rust Toolchain
       run: rustup install --no-self-update --profile minimal 1.74.0
     - name: Check Build
