@@ -667,7 +667,11 @@ where
                     if self.needs_indent {
                         self.write_newlines(newlines)?;
                     }
-                    write!(self, "{}", &self.input[range].trim_end_matches('\n'))?;
+                    write!(
+                        self,
+                        "{}",
+                        &self.input[range].trim_start().trim_end_matches('\n')
+                    )?;
                     self.check_needs_indent(&event);
                 }
                 Event::Rule => {

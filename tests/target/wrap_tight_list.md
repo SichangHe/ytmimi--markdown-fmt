@@ -11,9 +11,9 @@
     <!-- HTML blocks like comments and <p> tags are not wrapped because they aren't parsed as paragraphs... -->
     <p> some more html</p>
     <p>
-      some
-      more
-      html
+    some
+    more
+    html
     </p>
     ```text
     Since there are no spaces between any of of the items in the list, this is considered a tight list

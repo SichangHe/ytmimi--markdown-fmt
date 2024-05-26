@@ -28,8 +28,16 @@ impl FormatterBuilder {
     }
 }
 
+fn init_tracing() {
+    _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_ansi(true)
+        .try_init();
+}
+
 #[test]
 fn reformat() {
+    init_tracing();
     let input = r##"#  Hello World!
 1.  Hey [ there! ]
 2.  what's going on?
@@ -71,6 +79,7 @@ pub(crate) fn get_test_files<P: AsRef<Path>>(
 
 #[test]
 fn check_markdown_formatting() {
+    init_tracing();
     let mut errors = 0;
 
     for file in get_test_files("tests/source", "md") {
@@ -97,6 +106,7 @@ fn check_markdown_formatting() {
 
 #[test]
 fn idempotence_test() {
+    init_tracing();
     let mut errors = 0;
 
     for file in get_test_files("tests/target", "md") {
@@ -106,7 +116,7 @@ fn idempotence_test() {
 
         if formatted_input != input {
             eprintln!(
-                "Idenpotency does not hold for {}. Formatted:\n{formatted_input}\n",
+                "Idempotency does not hold for {}. Formatted:\n{formatted_input}\n",
                 file.display()
             );
             errors += 1;
