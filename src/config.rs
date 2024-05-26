@@ -2,7 +2,7 @@ use std::{borrow::Cow, str::FromStr};
 
 use crate::list::{ListMarker, OrderedListMarker, ParseListMarkerError, UnorderedListMarker};
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Config {
     pub max_width: Option<usize>,
     pub fixed_zero_padding: Option<usize>,

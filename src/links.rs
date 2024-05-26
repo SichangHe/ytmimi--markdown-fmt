@@ -3,9 +3,12 @@ use pulldown_cmark::Event;
 use std::borrow::Cow;
 use std::fmt::Write;
 
-impl<'i, F, I> FormatState<'i, F, I>
+use super::*;
+
+impl<'i, F, I, P> FormatState<'i, F, I, P>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
+    P: ParagraphFormatter,
 {
     pub(super) fn write_inline_link<S: AsRef<str>>(
         &mut self,

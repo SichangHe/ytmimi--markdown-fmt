@@ -81,6 +81,7 @@ mod utils;
 
 pub use builder::FormatterBuilder;
 pub use formatter::MarkdownFormatter;
+pub use paragraph::{Paragraph, ParagraphFormatter};
 
 /// Reformat a markdown snippet with all the default settings.
 ///

@@ -15,6 +15,8 @@ use crate::list::ListMarker;
 use crate::paragraph::Paragraph;
 use crate::table::TableState;
 
+use super::*;
+
 /// Used to format Markdown inputs.
 ///
 /// To get a [MarkdownFormatter] use [FormatterBuilder::build]
@@ -37,6 +39,25 @@ impl MarkdownFormatter {
     /// assert_eq!(rewrite, String::from("# Header!"));
     /// ```
     pub fn format(self, input: &str) -> Result<String, std::fmt::Error> {
+        self.format_with_paragraph_formatter::<Paragraph>(input)
+    }
+
+    /// Format Markdown input with the given [`ParagraphFormatter`].
+    ///
+    /// ```rust
+    /// # use markdown_fmt::FormatterBuilder;
+    /// let builder = FormatterBuilder::default();
+    /// let formatter = builder.build();
+    /// let input = "   #  Header! ";
+    /// let rewrite = formatter
+    ///     .format_with_paragraph_formatter::<markdown_fmt::Paragraph>(input)
+    ///     .unwrap();
+    /// assert_eq!(rewrite, String::from("# Header!"));
+    /// ```
+    pub fn format_with_paragraph_formatter<P>(self, input: &str) -> Result<String, std::fmt::Error>
+    where
+        P: ParagraphFormatter,
+    {
         // callback that will always revcover broken links
         let mut callback = |broken_link| {
             tracing::trace!("found boken link: {broken_link:?}");
@@ -106,7 +127,7 @@ impl MarkdownFormatter {
 
         let iter = parser.into_offset_iter().all_loose_lists();
 
-        let fmt_state = FormatState::new(
+        let fmt_state = <FormatState<_, _, P>>::new_with_paragraph_formatter(
             input,
             self.config,
             self.code_block_formatter,
@@ -132,7 +153,7 @@ impl MarkdownFormatter {
 
 type ReferenceLinkDefinition = (String, String, Option<(String, char)>, Range<usize>);
 
-pub(crate) struct FormatState<'i, F, I>
+pub(crate) struct FormatState<'i, F, I, P>
 where
     I: Iterator,
 {
@@ -175,16 +196,17 @@ where
     code_block_formatter: F,
     trim_link_or_image_start: bool,
     /// Handles paragraph formatting.
-    paragraph: Option<Paragraph>,
+    paragraph: Option<P>,
     /// Format configurations
     config: Config,
 }
 
 /// Depnding on the formatting context there are a few different buffers where we might want to
 /// write formatted markdown events. The Write impl helps us centralize this logic.
-impl<'i, F, I> Write for FormatState<'i, F, I>
+impl<'i, F, I, P> Write for FormatState<'i, F, I, P>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
+    P: ParagraphFormatter,
 {
     fn write_str(&mut self, text: &str) -> std::fmt::Result {
         if let Some(writer) = self.current_buffer() {
@@ -201,9 +223,10 @@ where
     }
 }
 
-impl<'i, F, I> FormatState<'i, F, I>
+impl<'i, F, I, P> FormatState<'i, F, I, P>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
+    P: ParagraphFormatter,
 {
     /// Peek at the next Markdown Event
     fn peek(&mut self) -> Option<&Event<'i>> {
@@ -506,12 +529,43 @@ where
     }
 }
 
-impl<'i, F, I> FormatState<'i, F, I>
+impl<'i, F, I, P> FormatState<'i, F, I, P>
+where
+    I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
+    P: ParagraphFormatter,
+{
+}
+
+#[allow(dead_code)] // For testing.
+impl<'i, F, I> FormatState<'i, F, I, Paragraph>
 where
     F: Fn(&str, String) -> String,
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
 {
     pub(crate) fn new(
+        input: &'i str,
+        config: Config,
+        code_block_formatter: F,
+        iter: I,
+        reference_links: Vec<ReferenceLinkDefinition>,
+    ) -> Self {
+        Self::new_with_paragraph_formatter(
+            input,
+            config,
+            code_block_formatter,
+            iter,
+            reference_links,
+        )
+    }
+}
+
+impl<'i, F, I, P> FormatState<'i, F, I, P>
+where
+    F: Fn(&str, String) -> String,
+    I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
+    P: ParagraphFormatter,
+{
+    pub(crate) fn new_with_paragraph_formatter(
         input: &'i str,
         config: Config,
         code_block_formatter: F,
@@ -714,7 +768,7 @@ where
                     .config
                     .max_width()
                     .map(|w| w.saturating_sub(self.indentation_len()));
-                self.paragraph = Some(Paragraph::new(width, capacity));
+                self.paragraph = Some(P::new(width, capacity));
             }
             Tag::Heading(level, _, _) => {
                 if self.needs_indent {
