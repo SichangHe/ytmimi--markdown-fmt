@@ -71,6 +71,7 @@ impl MarkdownFormatter {
                 // This creates a stack of reference links that we can pop off of.
                 link_b.span.start.cmp(&link_a.span.start)
             })
+            // TODO: Fix typo.
             .map(|(link_lable, LinkDef { dest, title, span })| {
                 let full_link = &input[span.clone()];
                 if title.is_some() && is_false_title(input, span.clone()) {
@@ -86,9 +87,11 @@ impl MarkdownFormatter {
                     );
                 }
 
-                if let Some((url, title)) =
-                    links::recover_escaped_link_destination_and_title(full_link, title.is_some())
-                {
+                if let Some((url, title)) = links::recover_escaped_link_destination_and_title(
+                    full_link,
+                    link_lable,
+                    title.is_some(),
+                ) {
                     (link_lable.to_string(), url, title, span.clone())
                 } else {
                     // Couldn't recover URL from source, just use what we've been given
