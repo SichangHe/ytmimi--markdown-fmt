@@ -1,7 +1,8 @@
-use crate::config::Config;
-use crate::{rewrite_markdown_sichanghe_opinion, rewrite_markdown_with_builder, FormatterBuilder};
-use rust_search::SearchBuilder;
 use std::path::{Path, PathBuf};
+
+use rust_search::SearchBuilder;
+
+use super::*;
 
 impl FormatterBuilder {
     pub fn from_leading_config_comments(input: &str) -> Self {

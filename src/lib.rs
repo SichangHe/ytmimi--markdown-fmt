@@ -65,23 +65,44 @@
 //! # Ok::<(), std::fmt::Error>(())
 //! ````
 
+use std::borrow::Cow;
+use std::fmt::Write;
+use std::iter::Peekable;
+use std::num::ParseIntError;
+use std::ops::Range;
+use std::str::FromStr;
+
+use itertools::{EitherOrBoth, Itertools};
+use pulldown_cmark::Alignment;
+use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel};
+use pulldown_cmark::{LinkDef, LinkType, Options, Parser, Tag};
+use textwrap::Options as TextWrapOptions;
+use unicode_segmentation::UnicodeSegmentation;
+
 mod adapters;
 mod builder;
-// TODO: Make pub.
 mod config;
 mod escape;
 mod formatter;
 mod links;
-mod list;
+pub mod list;
 mod paragraph;
 mod table;
 #[cfg(test)]
 mod test;
 mod utils;
 
-pub use builder::FormatterBuilder;
-pub use formatter::MarkdownFormatter;
-pub use paragraph::{Paragraph, ParagraphFormatter};
+use crate::{
+    adapters::LooseListExt, builder::CodeBlockFormatter, formatter::FormatState, table::TableState,
+    utils::unicode_str_width,
+};
+pub use crate::{
+    builder::FormatterBuilder,
+    config::Config,
+    formatter::MarkdownFormatter,
+    list::{ListMarker, OrderedListMarker, ParseListMarkerError, UnorderedListMarker},
+    paragraph::{Paragraph, ParagraphFormatter},
+};
 
 /// Reformat a markdown snippet with all the default settings.
 ///

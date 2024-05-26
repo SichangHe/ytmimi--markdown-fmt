@@ -1,4 +1,4 @@
-use super::formatter::FormatState;
+use super::*;
 
 const ATX_HEADER_ESCAPES: [&str; 6] = ["# ", "## ", "### ", "#### ", "##### ", "###### "];
 

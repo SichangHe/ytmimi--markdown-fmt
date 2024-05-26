@@ -1,5 +1,4 @@
-use std::fmt::Write;
-use textwrap::Options as TextWrapOptions;
+use super::*;
 
 const MARKDOWN_HARD_BREAK: &str = "  \n";
 

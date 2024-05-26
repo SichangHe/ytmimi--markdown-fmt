@@ -1,20 +1,3 @@
-use std::borrow::Cow;
-use std::fmt::Write;
-use std::iter::Peekable;
-use std::ops::Range;
-
-use itertools::Itertools;
-use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel};
-use pulldown_cmark::{LinkDef, LinkType, Options, Parser, Tag};
-
-use crate::adapters::LooseListExt;
-use crate::builder::CodeBlockFormatter;
-use crate::config::Config;
-use crate::links;
-use crate::list::ListMarker;
-use crate::paragraph::Paragraph;
-use crate::table::TableState;
-
 use super::*;
 
 /// Used to format Markdown inputs.
@@ -766,7 +749,7 @@ where
                 let capacity = (range.end - range.start) * 2;
                 let width = self
                     .config
-                    .max_width()
+                    .max_width
                     .map(|w| w.saturating_sub(self.indentation_len()));
                 self.paragraph = Some(P::new(width, capacity));
             }

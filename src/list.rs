@@ -1,5 +1,6 @@
-use std::borrow::Cow;
-use std::num::ParseIntError;
+//! List marker types.
+use super::*;
+
 // Including all these spaces might be overkill, but it probably doesn't hurt.
 // In practice we'll see far fewer digits in an ordered list.
 //
@@ -9,17 +10,23 @@ use std::num::ParseIntError;
 //     character or a ) character. (The reason for the length limit is that with 10 digits we
 //     start seeing integer overflows in some browsers.)
 //
-#[rustfmt::skip]
+#[rustfmt::skip] // RustFmt chocks on this.
 const LIST_INDENTATION: &str = "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ";
 const ZERO_PADDING: &str = "00000000000000000000";
 
+/// Marker for the beginning of a list, e.g., `1.` or `*`.
 #[derive(Debug, PartialEq, Eq)]
-pub(super) enum ListMarker {
+pub enum ListMarker {
+    /// An ordered list marker, e.g., `8.` or `013)`.
     Ordered {
+        /// Number of `0` padding before the number.
         zero_padding: usize,
+        /// The number part of the marker.
         number: usize,
+        /// The marker symble.
         marker: OrderedListMarker,
     },
+    /// An unordered list marker, e.g., `+` or `-`.
     Unordered(UnorderedListMarker),
 }
 
@@ -82,9 +89,12 @@ impl ListMarker {
     }
 }
 
+/// Marker symbol after the number for ordered lists.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub(super) enum OrderedListMarker {
+pub enum OrderedListMarker {
+    /// `.`.
     Period,
+    /// `)`.
     Parenthesis,
 }
 
@@ -97,9 +107,10 @@ impl From<&OrderedListMarker> for char {
     }
 }
 
+/// Invalid character encountered when parsing a list marker.
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq)]
-pub(super) struct InvalidMarker(char);
+pub struct InvalidMarker(char);
 
 impl TryFrom<char> for OrderedListMarker {
     type Error = InvalidMarker;
@@ -113,10 +124,14 @@ impl TryFrom<char> for OrderedListMarker {
     }
 }
 
+/// Marker symbol for unordered lists.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub(super) enum UnorderedListMarker {
+pub enum UnorderedListMarker {
+    /// `*`.
     Asterisk,
+    /// `+`.
     Plus,
+    /// `-`.
     Hyphen,
 }
 
@@ -145,7 +160,7 @@ impl TryFrom<char> for UnorderedListMarker {
 
 /// Some error occured when parsing a ListMarker from a &str
 #[derive(Debug, PartialEq, Eq)]
-pub(super) enum ParseListMarkerError {
+pub enum ParseListMarkerError {
     /// Did not contain the correct list markers.
     NoMarkers,
     /// Invalid char where a list marker was expected
@@ -201,7 +216,6 @@ impl std::str::FromStr for ListMarker {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::str::FromStr;
 
     macro_rules! check_unordered_list {
         ($string:literal, marker=$m:ident) => {

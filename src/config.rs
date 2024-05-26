@@ -1,14 +1,19 @@
-use std::{borrow::Cow, str::FromStr};
+use super::*;
 
-use crate::list::{ListMarker, OrderedListMarker, ParseListMarkerError, UnorderedListMarker};
-
+/// Configuration options for the Markdown formatter.
 #[derive(Clone, Debug, Default)]
 pub struct Config {
+    /// Maximum line width.
     pub max_width: Option<usize>,
+    /// If set, all ordered lists will have this many leading zeroes.
     pub fixed_zero_padding: Option<usize>,
+    /// If set, all ordered lists will begin with this number.
     pub fixed_number: Option<usize>,
+    /// If set, all ordered lists will have this marker after the number.
     pub fixed_ordered_list_marker: Option<OrderedListMarker>,
+    /// If set, all unordered lists will begin with this marker.
     pub fixed_unordered_list_marker: Option<UnorderedListMarker>,
+    /// If set, all lists will have this many indentation per level.
     pub fixed_indentation: Option<Cow<'static, str>>,
 }
 
@@ -25,14 +30,7 @@ impl Config {
         }
     }
 
-    pub fn max_width(&self) -> Option<usize> {
-        self.max_width
-    }
-
-    pub fn set_max_width(&mut self, value: Option<usize>) {
-        self.max_width = value;
-    }
-
+    /// Parse a list marker from string with this configuration.
     pub fn list_marker(&self, source: &str) -> Result<ListMarker, ParseListMarkerError> {
         Ok(match ListMarker::from_str(source)? {
             ListMarker::Ordered {

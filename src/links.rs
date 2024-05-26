@@ -1,8 +1,3 @@
-use super::formatter::FormatState;
-use pulldown_cmark::Event;
-use std::borrow::Cow;
-use std::fmt::Write;
-
 use super::*;
 
 impl<'i, F, I, P> FormatState<'i, F, I, P>
