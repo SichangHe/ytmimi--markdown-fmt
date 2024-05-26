@@ -85,7 +85,10 @@ fn check_markdown_formatting() {
 
         if formatted_input != expected_output {
             errors += 1;
-            eprintln!("error formatting {}", file.display());
+            eprintln!(
+                "error formatting {}. Formatted:\n{formatted_input}\n",
+                file.display()
+            );
         }
     }
 
