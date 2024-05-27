@@ -3,3 +3,4 @@ error_on_unformatted = true
 format_generated_files = false
 version = "Two"
 format_code_in_doc_comments = true
+ignore = ["tests/commonmark_v0_30_spec.rs", "tests/gfm_spec_v0_29_0_gfm_13.rs"]
