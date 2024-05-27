@@ -1,3 +1,5 @@
+use pulldown_cmark::MetadataBlockKind;
+
 use super::*;
 
 /// Used to format Markdown inputs.
@@ -1127,8 +1129,8 @@ where
                 }
                 self.html_block = Some(html_block);
             }
-            Tag::MetadataBlock(_) => {
-                // TODO: What should I do with this?
+            Tag::MetadataBlock(kind) => {
+                self.write_metadata_block_separator(&kind, range)?;
             }
         }
         Ok(())
@@ -1332,11 +1334,25 @@ where
                     self.join_with_indentation(&h.into_buffer(), false)?;
                 }
             }
-            TagEnd::MetadataBlock(_) => {
-                // TODO: What should I do?
+            TagEnd::MetadataBlock(kind) => {
+                self.write_metadata_block_separator(&kind, range)?;
             }
         }
         Ok(())
+    }
+
+    fn write_metadata_block_separator(
+        &mut self,
+        kind: &MetadataBlockKind,
+        range: Range<usize>,
+    ) -> std::fmt::Result {
+        let newlines = self.count_newlines(&range);
+        self.write_newlines(newlines)?;
+        let marker = match kind {
+            MetadataBlockKind::YamlStyle => "---",
+            MetadataBlockKind::PlusesStyle => "+++",
+        };
+        writeln!(self, "{marker}")
     }
 }
 
