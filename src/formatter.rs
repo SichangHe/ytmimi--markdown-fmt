@@ -677,8 +677,8 @@ where
                     self.end_tag(*tag, range)?;
                     self.check_needs_indent(&event);
                 }
-                Event::Text(ref parsed_text)
                 // TODO: Distinguish math.
+                Event::Text(ref parsed_text)
                 | Event::InlineMath(ref parsed_text)
                 | Event::DisplayMath(ref parsed_text) => {
                     last_position = range.end;
