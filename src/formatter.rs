@@ -1042,10 +1042,10 @@ where
                 write!(self, "[^{label}]: ")?;
             }
             Tag::Emphasis => {
-                rewrite_marker_with_limit(self.input, &range, self, Some(1))?;
+                self.write_emphasis_marker(&range)?;
             }
             Tag::Strong => {
-                rewrite_marker_with_limit(self.input, &range, self, Some(2))?;
+                self.write_strong_marker(&range)?;
             }
             Tag::Strikethrough => {
                 rewrite_marker(self.input, &range, self)?;
@@ -1252,10 +1252,10 @@ where
             }
             TagEnd::FootnoteDefinition => {}
             TagEnd::Emphasis => {
-                rewrite_marker_with_limit(self.input, &range, self, Some(1))?;
+                self.write_emphasis_marker(&range)?;
             }
             TagEnd::Strong => {
-                rewrite_marker_with_limit(self.input, &range, self, Some(2))?;
+                self.write_strong_marker(&range)?;
             }
             TagEnd::Strikethrough => {
                 rewrite_marker(self.input, &range, self)?;
@@ -1339,6 +1339,20 @@ where
             }
         }
         Ok(())
+    }
+
+    fn write_emphasis_marker(&mut self, range: &Range<usize>) -> std::fmt::Result {
+        match self.config.fixed_emphasis_marker {
+            None => rewrite_marker_with_limit(self.input, range, self, Some(1)),
+            Some(marker) => self.write_str(marker),
+        }
+    }
+
+    fn write_strong_marker(&mut self, range: &Range<usize>) -> std::fmt::Result {
+        match self.config.fixed_strong_marker {
+            None => rewrite_marker_with_limit(self.input, range, self, Some(2)),
+            Some(marker) => self.write_str(marker),
+        }
     }
 
     fn write_metadata_block_separator(

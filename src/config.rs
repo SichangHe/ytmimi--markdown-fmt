@@ -15,6 +15,10 @@ pub struct Config {
     pub fixed_unordered_list_marker: Option<UnorderedListMarker>,
     /// If set, all lists will have this many indentation per level.
     pub fixed_indentation: Option<Cow<'static, str>>,
+    /// If set, all emphasis spans will use this marker.
+    pub fixed_emphasis_marker: Option<&'static str>,
+    /// If set, all strong spans will use this marker.
+    pub fixed_strong_marker: Option<&'static str>,
 }
 
 impl Config {
@@ -27,6 +31,8 @@ impl Config {
             fixed_ordered_list_marker: Some(OrderedListMarker::Period),
             fixed_unordered_list_marker: Some(UnorderedListMarker::Hyphen),
             fixed_indentation: Some("    ".into()),
+            fixed_emphasis_marker: Some("*"),
+            fixed_strong_marker: Some("**"),
         }
     }
 
