@@ -22,24 +22,29 @@ impl MarkdownFormatter {
     /// assert_eq!(rewrite, String::from("# Header!"));
     /// ```
     pub fn format(self, input: &str) -> Result<String, std::fmt::Error> {
-        self.format_with_paragraph_formatter::<Paragraph>(input)
+        self.format_with_paragraph_and_html_block_formatter::<Paragraph, PreservingHtmlBlock>(input)
     }
 
-    /// Format Markdown input with the given [`ParagraphFormatter`].
+    /// Format Markdown input with the given [`ParagraphFormatter`] `P` to
+    /// format paragraphs, and `H` to format HTML blocks.
     ///
     /// ```rust
-    /// # use markdown_fmt::FormatterBuilder;
+    /// # use markdown_fmt::{FormatterBuilder, Paragraph, PreservingHtmlBlock};
     /// let builder = FormatterBuilder::default();
     /// let formatter = builder.build();
     /// let input = "   #  Header! ";
     /// let rewrite = formatter
-    ///     .format_with_paragraph_formatter::<markdown_fmt::Paragraph>(input)
+    ///     .format_with_paragraph_and_html_block_formatter::<Paragraph, PreservingHtmlBlock>(input)
     ///     .unwrap();
     /// assert_eq!(rewrite, String::from("# Header!"));
     /// ```
-    pub fn format_with_paragraph_formatter<P>(self, input: &str) -> Result<String, std::fmt::Error>
+    pub fn format_with_paragraph_and_html_block_formatter<P, H>(
+        self,
+        input: &str,
+    ) -> Result<String, std::fmt::Error>
     where
         P: ParagraphFormatter,
+        H: ParagraphFormatter,
     {
         // callback that will always revcover broken links
         let mut callback = |broken_link| {
@@ -111,7 +116,7 @@ impl MarkdownFormatter {
 
         let iter = parser.into_offset_iter().all_loose_lists();
 
-        let fmt_state = <FormatState<_, _, P>>::new_with_paragraph_formatter(
+        let fmt_state = <FormatState<_, _, P, H>>::new_with_paragraph_and_html_block_formatter(
             input,
             self.config,
             self.code_block_formatter,
@@ -137,7 +142,7 @@ impl MarkdownFormatter {
 
 type ReferenceLinkDefinition = (String, String, Option<(String, char)>, Range<usize>);
 
-pub(crate) struct FormatState<'i, F, I, P>
+pub(crate) struct FormatState<'i, F, I, P, H>
 where
     I: Iterator,
 {
@@ -183,19 +188,25 @@ where
     trim_link_or_image_start: bool,
     /// Handles paragraph formatting.
     paragraph: Option<P>,
+    /// Handles HTML block formatting.
+    html_block: Option<H>,
+    /// Force write into rewrite buffer.
+    force_rewrite_buffer: bool,
     /// Format configurations
     config: Config,
 }
 
 /// Depnding on the formatting context there are a few different buffers where we might want to
 /// write formatted markdown events. The Write impl helps us centralize this logic.
-impl<'i, F, I, P> Write for FormatState<'i, F, I, P>
+impl<'i, F, I, P, H> Write for FormatState<'i, F, I, P, H>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
     P: ParagraphFormatter,
+    H: ParagraphFormatter,
 {
     fn write_str(&mut self, text: &str) -> std::fmt::Result {
         if let Some(writer) = self.current_buffer() {
+            tracing::trace!(text, "write_str");
             writer.write_str(text)?
         }
         Ok(())
@@ -209,10 +220,11 @@ where
     }
 }
 
-impl<'i, F, I, P> FormatState<'i, F, I, P>
+impl<'i, F, I, P, H> FormatState<'i, F, I, P, H>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
     P: ParagraphFormatter,
+    H: ParagraphFormatter,
 {
     /// Peek at the next Markdown Event
     fn peek(&mut self) -> Option<&Event<'i>> {
@@ -253,6 +265,11 @@ where
             self.nested_context.last(),
             Some(Tag::CodeBlock(CodeBlockKind::Indented))
         )
+    }
+
+    /// Check if we're in an HTML block.
+    fn in_html_block(&self) -> bool {
+        self.html_block.is_some()
     }
 
     // check if we're formatting a table header
@@ -299,17 +316,29 @@ where
     /// rewrite buffer, the code block buffer, the internal table state, or anything else we're
     /// writing to while reformatting
     fn current_buffer(&mut self) -> Option<&mut dyn std::fmt::Write> {
-        if self.in_fenced_code_block() || self.in_indented_code_block() {
+        if self.force_rewrite_buffer {
+            tracing::trace!("rewrite_buffer");
+            Some(&mut self.rewrite_buffer)
+        } else if self.in_fenced_code_block() || self.in_indented_code_block() {
+            tracing::trace!("code_block_buffer");
             Some(&mut self.code_block_buffer)
+        } else if self.in_html_block() {
+            tracing::trace!("html_block");
+            self.html_block
+                .as_mut()
+                .map(|h| h as &mut dyn std::fmt::Write)
         } else if self.in_table_header() || self.in_table_row() {
+            tracing::trace!("table_state");
             self.table_state
                 .as_mut()
                 .map(|s| s as &mut dyn std::fmt::Write)
         } else if self.in_paragraph() {
+            tracing::trace!("paragraph");
             self.paragraph
                 .as_mut()
                 .map(|p| p as &mut dyn std::fmt::Write)
         } else {
+            tracing::trace!("rewrite_buffer");
             Some(&mut self.rewrite_buffer)
         }
     }
@@ -318,6 +347,8 @@ where
     fn is_current_buffer_empty(&self) -> bool {
         if self.in_fenced_code_block() || self.in_indented_code_block() {
             self.code_block_buffer.is_empty()
+        } else if self.in_html_block() {
+            self.html_block.as_ref().is_some_and(|h| h.is_empty())
         } else if self.in_table_header() || self.in_table_row() {
             self.table_state.as_ref().is_some_and(|s| s.is_empty())
         } else if self.in_paragraph() {
@@ -402,6 +433,7 @@ where
         let nested = self.is_nested();
         let newlines_to_write = max_newlines.saturating_sub(newlines);
         let next_is_end_event = self.is_next_end_event();
+        tracing::trace!(newlines, nested, newlines_to_write, next_is_end_event);
 
         for i in 0..newlines_to_write {
             let is_last = i == newlines_to_write - 1;
@@ -487,6 +519,7 @@ where
         buffer: &str,
         start_with_indentation: bool,
     ) -> std::fmt::Result {
+        self.force_rewrite_buffer = true;
         let mut lines = buffer.trim_end().lines().peekable();
         while let Some(line) = lines.next() {
             let is_last = lines.peek().is_none();
@@ -511,11 +544,12 @@ where
                 self.write_indentation(is_next_empty)?;
             }
         }
+        self.force_rewrite_buffer = false;
         Ok(())
     }
 }
 
-impl<'i, F, I, P> FormatState<'i, F, I, P>
+impl<'i, F, I, P, H> FormatState<'i, F, I, P, H>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
     P: ParagraphFormatter,
@@ -523,7 +557,7 @@ where
 }
 
 #[allow(dead_code)] // For testing.
-impl<'i, F, I> FormatState<'i, F, I, Paragraph>
+impl<'i, F, I> FormatState<'i, F, I, Paragraph, PreservingHtmlBlock>
 where
     F: Fn(&str, String) -> String,
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
@@ -535,7 +569,7 @@ where
         iter: I,
         reference_links: Vec<ReferenceLinkDefinition>,
     ) -> Self {
-        Self::new_with_paragraph_formatter(
+        Self::new_with_paragraph_and_html_block_formatter(
             input,
             config,
             code_block_formatter,
@@ -545,13 +579,14 @@ where
     }
 }
 
-impl<'i, F, I, P> FormatState<'i, F, I, P>
+impl<'i, F, I, P, H> FormatState<'i, F, I, P, H>
 where
     F: Fn(&str, String) -> String,
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
     P: ParagraphFormatter,
+    H: ParagraphFormatter,
 {
-    pub(crate) fn new_with_paragraph_formatter(
+    pub(crate) fn new_with_paragraph_and_html_block_formatter(
         input: &'i str,
         config: Config,
         code_block_formatter: F,
@@ -577,6 +612,8 @@ where
             code_block_formatter,
             trim_link_or_image_start: false,
             paragraph: None,
+            html_block: None,
+            force_rewrite_buffer: false,
             config,
         }
     }
@@ -613,6 +650,12 @@ where
         Ok(())
     }
 
+    fn formatter_width(&self) -> Option<usize> {
+        self.config
+            .max_width
+            .map(|w| w.saturating_sub(self.indentation_len()))
+    }
+
     /// The main entry point for markdown formatting.
     pub fn format(mut self) -> Result<String, std::fmt::Error> {
         while let Some((event, range)) = self.events.next() {
@@ -647,6 +690,10 @@ where
                     } else {
                         text_from_source
                     };
+
+                    if self.in_html_block() {
+                        text = text.trim_start_matches(' ');
+                    }
 
                     if self.in_link_or_image() && self.trim_link_or_image_start {
                         // Trim leading whitespace from reference links or images
@@ -704,15 +751,19 @@ where
                 Event::HardBreak => {
                     write!(self, "{}", &self.input[range])?;
                 }
-                Event::Html(_) | Event::InlineHtml(_) => {
+                Event::Html(_) => {
+                    // NOTE: This limitation is because Pulldown-CMark
+                    // incorrectly include spaces before HTML.
+                    let html = &self.input[range].trim_start_matches(' ');
+                    write!(self, "{}", html)?; // Write HTML as is.
+                    self.check_needs_indent(&event);
+                }
+                Event::InlineHtml(_) => {
                     let newlines = self.count_newlines(&range);
                     if self.needs_indent {
                         self.write_newlines(newlines)?;
                     }
-                    // NOTE: This limitation is because Pulldown-CMark
-                    // incorrectly include spaces before HTML.
-                    let html = &self.input[range].trim_start();
-                    write!(self, "{}", html.trim_end_matches('\n'))?;
+                    write!(self, "{}", &self.input[range].trim_end_matches('\n'))?;
                     self.check_needs_indent(&event);
                 }
                 Event::Rule => {
@@ -754,10 +805,7 @@ where
                 }
                 self.nested_context.push(tag);
                 let capacity = (range.end - range.start) * 2;
-                let width = self
-                    .config
-                    .max_width
-                    .map(|w| w.saturating_sub(self.indentation_len()));
+                let width = self.formatter_width();
                 self.paragraph = Some(P::new(width, capacity));
             }
             Tag::Heading {
@@ -1059,8 +1107,28 @@ where
                     state.write(String::new().into());
                 }
             }
-            Tag::HtmlBlock | Tag::MetadataBlock(_) => {
-                // TODO: What should I do with these?
+            Tag::HtmlBlock => {
+                if matches!(self.events.peek(), Some((Event::End(TagEnd::Paragraph), _))) {
+                    tracing::debug!("HTML block start before paragraph end.");
+                    // NOTE: Pulldown-CMark has a bug where it starts an HTML
+                    // block before ending a paragraph.
+                    // In this case, we consume the paragraph first.
+                    let (_, range) = self.events.next().expect("We peeked.");
+                    self.end_tag(TagEnd::Paragraph, range)?;
+                }
+
+                let capacity = (range.end - range.start) * 2;
+                let width = self.formatter_width();
+                let mut html_block = H::new(width, capacity);
+                let newlines = self.count_newlines(&range);
+                tracing::trace!(newlines);
+                for _ in 0..newlines {
+                    html_block.write_char('\n')?;
+                }
+                self.html_block = Some(html_block);
+            }
+            Tag::MetadataBlock(_) => {
+                // TODO: What should I do with this?
             }
         }
         Ok(())
@@ -1257,7 +1325,14 @@ where
                     state.increment_col_index()
                 }
             }
-            TagEnd::MetadataBlock(_) | TagEnd::HtmlBlock => {
+            TagEnd::HtmlBlock => {
+                let newlines = self.count_newlines(&range);
+                self.write_newlines(newlines)?;
+                if let Some(h) = self.html_block.take() {
+                    self.join_with_indentation(&h.into_buffer(), false)?;
+                }
+            }
+            TagEnd::MetadataBlock(_) => {
                 // TODO: What should I do?
             }
         }

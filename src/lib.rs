@@ -85,6 +85,7 @@ mod builder;
 mod config;
 mod escape;
 mod formatter;
+mod html_block;
 mod links;
 pub mod list;
 mod paragraph;
@@ -101,6 +102,7 @@ pub use crate::{
     builder::FormatterBuilder,
     config::Config,
     formatter::MarkdownFormatter,
+    html_block::PreservingHtmlBlock,
     list::{ListMarker, OrderedListMarker, ParseListMarkerError, UnorderedListMarker},
     paragraph::{Paragraph, ParagraphFormatter},
 };
