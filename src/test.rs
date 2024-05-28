@@ -1,5 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
+use insta::{assert_snapshot, glob, Settings};
 use rust_search::SearchBuilder;
 
 use super::*;
@@ -55,19 +59,8 @@ fn main() {}
     there!
     ]: htts://example.com "Yoooo"
 "##;
-    let expected = r##"# Hello World!
-1. Hey [there!]
-1. what's going on?
-
-<p> and a little bit of HTML </p>
-
-```rust
-fn main() {}
-```
-[there!]: htts://example.com "Yoooo"
-"##;
     let rewrite = rewrite_markdown_sichanghe_opinion(input).unwrap();
-    assert_eq!(rewrite, expected)
+    assert_snapshot!(rewrite)
 }
 
 pub(crate) fn get_test_files<P: AsRef<Path>>(
@@ -84,48 +77,43 @@ pub(crate) fn get_test_files<P: AsRef<Path>>(
 #[test]
 fn check_markdown_formatting() {
     init_tracing();
-    let mut errors = 0;
-
-    for file in get_test_files("tests/source", "md") {
-        let input = std::fs::read_to_string(&file).unwrap();
+    glob!("source/*.md", |path| {
+        let input = fs::read_to_string(path).unwrap();
         let builder = FormatterBuilder::from_leading_config_comments(&input);
         let formatted_input = rewrite_markdown_with_builder(&input, builder).unwrap();
-        let target_file = file
-            .strip_prefix("tests/source")
-            .map(|p| PathBuf::from("tests/target").join(p))
-            .unwrap();
-        let expected_output = std::fs::read_to_string(target_file).unwrap();
-
-        if formatted_input != expected_output {
-            errors += 1;
-            eprintln!(
-                "error formatting {}. Formatted:\n{formatted_input}\n",
-                file.display()
-            );
-        }
-    }
-
-    assert_eq!(errors, 0, "there should be no formatting error");
+        let mut settings = Settings::clone_current();
+        settings.set_prepend_module_to_snapshot(false);
+        settings.remove_description();
+        settings.remove_info();
+        settings.remove_input_file();
+        settings.set_snapshot_path("target/");
+        settings.bind(|| {
+            assert_snapshot!(formatted_input);
+        });
+    });
 }
 
 #[test]
 fn idempotence_test() {
     init_tracing();
-    let mut errors = 0;
-
-    for file in get_test_files("tests/target", "md") {
-        let input = std::fs::read_to_string(&file).unwrap();
+    glob!("target/*.snap", |path| {
+        let input = fs::read_to_string(path)
+            .unwrap()
+            .lines()
+            .skip(4)
+            .collect::<Vec<_>>()
+            .join("\n");
         let builder = FormatterBuilder::from_leading_config_comments(&input);
         let formatted_input = rewrite_markdown_with_builder(&input, builder).unwrap();
-
         if formatted_input != input {
-            eprintln!(
-                "Idempotency does not hold for {}. Formatted:\n{formatted_input}\n",
-                file.display()
+            panic!(
+                "Idemponency failed for `{}`:
+====Original====
+{input}
+====Formatted====
+{formatted_input}",
+                path.display()
             );
-            errors += 1;
         }
-    }
-
-    assert_eq!(errors, 0, "formatting should not change in target files");
+    });
 }

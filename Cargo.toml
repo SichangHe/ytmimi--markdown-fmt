@@ -29,5 +29,11 @@ tracing = { version = "0.1", default-features = false }
 textwrap = "0.16"
 
 [dev-dependencies]
+insta = { version = "1.39", features = ["glob"] }
 rust_search = "2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
+
+# Compile snapshot testing libraries with optimizations.
+[profile.dev.package]
+insta = { opt-level = 3 }
+similar = { opt-level = 3 }

@@ -1,3 +1,7 @@
+---
+source: src/tests.rs
+expression: formatted_input
+---
 A contiguous growable array type, written as `Vec<T>`, short for 'vector'.
 
 # Examples

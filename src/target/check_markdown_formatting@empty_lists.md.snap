@@ -1,3 +1,7 @@
+---
+source: src/tests.rs
+expression: formatted_input
+---
 -
     -
         -

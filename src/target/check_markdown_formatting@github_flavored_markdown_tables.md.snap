@@ -1,3 +1,7 @@
+---
+source: src/tests.rs
+expression: formatted_input
+---
 <!-- Some examples of regular and nested  tables -->
 <!-- Examples from https://github.com/rust-lang/rustfmt/blob/728939191e4218e2c1296c7ba3eb36590cbcb9bd/tests/target/issue-4210.rs -->
 
