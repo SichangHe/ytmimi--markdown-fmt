@@ -1,4 +1,4 @@
-use crate::config::Config;
+use super::*;
 
 pub(crate) type CodeBlockFormatter = Box<dyn Fn(&str, String) -> String>;
 
@@ -9,6 +9,23 @@ pub struct FormatterBuilder {
 }
 
 impl FormatterBuilder {
+    /// Create a [FormatterBuilder] with custom [`Config`].
+    ///
+    /// ```rust
+    /// # use markdown_fmt::{Config, FormatterBuilder};
+    /// let builder = FormatterBuilder::with_config(Config {
+    ///     max_width: Some(80),
+    ///     ..Default::default()
+    /// });
+    /// let formatter = builder.build();
+    /// ```
+    pub fn with_config(config: Config) -> Self {
+        Self {
+            config,
+            ..Default::default()
+        }
+    }
+
     /// Create a [FormatterBuilder] with a custom code block formatter.
     ///
     /// The closure used to reformat code blocks takes two arguments;
@@ -69,7 +86,13 @@ impl FormatterBuilder {
     ///
     /// When set to [None], the deafault, paragraph width is left unchanged.
     pub fn max_width(&mut self, max_width: Option<usize>) -> &mut Self {
-        self.config.set_max_width(max_width);
+        self.config.max_width = max_width;
+        self
+    }
+
+    /// Set the configuration based on Steven Hé (Sīchàng)'s opinion.
+    pub fn sichanghe_config(&mut self) -> &mut Self {
+        self.config = Config::sichanghe_opinion();
         self
     }
 
@@ -83,7 +106,9 @@ impl FormatterBuilder {
 
 impl std::fmt::Debug for FormatterBuilder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FormatterBuilder")
+        f.debug_struct("FormatterBuilder")
+            .field("config", &self.config)
+            .finish()
     }
 }
 

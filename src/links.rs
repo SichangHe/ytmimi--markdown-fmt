@@ -1,11 +1,10 @@
-use super::formatter::FormatState;
-use pulldown_cmark::Event;
-use std::borrow::Cow;
-use std::fmt::Write;
+use super::*;
 
-impl<'i, F, I> FormatState<'i, F, I>
+impl<'i, F, I, P, H> FormatState<'i, F, I, P, H>
 where
     I: Iterator<Item = (Event<'i>, std::ops::Range<usize>)>,
+    P: ParagraphFormatter,
+    H: ParagraphFormatter,
 {
     pub(super) fn write_inline_link<S: AsRef<str>>(
         &mut self,
@@ -152,10 +151,21 @@ fn link_title_start(link: &[u8]) -> usize {
 /// from the source is the easiest way to maintain all the escaped characters.
 pub(super) fn recover_escaped_link_destination_and_title(
     complete_link: &str,
+    link_label: &str,
     has_title: bool,
 ) -> Option<(String, Option<(String, char)>)> {
-    let rest = complete_link.split_once(':').map(|(_, rest)| rest.trim())?;
+    let rest = reference_definition_without_label(complete_link, link_label)
+        .split_once(':')
+        .map(|(_, rest)| rest.trim())?;
     split_inline_url_from_title(rest, has_title)
+}
+
+/// To avoid hitting `:` within the link label.
+fn reference_definition_without_label<'a>(complete_link: &'a str, link_label: &str) -> &'a str {
+    // If the link label is escaped, we may not find it.
+    // Then, we simply assume the link starts with the label.
+    let link_label_index = complete_link.find(link_label).unwrap_or_default();
+    &complete_link[(link_label_index + 1 + link_label.len())..]
 }
 
 fn trim_angle_brackes(url: &str) -> &str {

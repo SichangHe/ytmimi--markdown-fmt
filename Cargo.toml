@@ -1,6 +1,6 @@
 [package]
 name = "markdown-fmt"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 readme = "README.md"
 description = "Markdown formatter"
@@ -11,6 +11,7 @@ license = "MIT"
 keywords = ["markdown", "commonmark"]
 include = ["/src/**/*", "/LICENSE", "/README.md", "/CHANGELOG.md"]
 rust-version = "1.74.0"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -23,23 +24,26 @@ unsafe_code = "forbid"
 missing-docs = "deny"
 
 [dependencies]
-itertools = "0.10"
-pulldown-cmark = { version = "0.9.3", default-features = false }
+itertools = "0.13"
+pulldown-cmark = { version = "0.11", default-features = false }
 unicode-width = "0.1"
-unicode-segmentation = "1.9"
-clap = { version = "4.5.2", features = ["derive"], optional = true }
-anyhow = { version = "1.0.80", optional = true }
-tracing = { version = "0.1.40", default-features = false }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"], optional = true }
-textwrap = "0.16.1"
+unicode-segmentation = "1"
+clap = { version = "4", features = ["derive"], optional = true }
+anyhow = { version = "1", optional = true }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+], optional = true }
+textwrap = "0.16"
 
 [features]
 gen-tests = ["dep:serde", "dep:serde_json"]
 build-binary = ["dep:clap", "dep:anyhow", "dep:tracing-subscriber"]
 
 [build-dependencies]
-serde = { version = "1.0.160", features = ["derive"], optional = true }
-serde_json = { version = "1.0", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
-rust_search = "2.1.0"
+rust_search = "2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }

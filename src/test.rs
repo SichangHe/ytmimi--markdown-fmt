@@ -1,11 +1,15 @@
-use crate::config::Config;
-use crate::{rewrite_markdown, rewrite_markdown_with_builder, FormatterBuilder};
-use rust_search::SearchBuilder;
 use std::path::{Path, PathBuf};
+
+use rust_search::SearchBuilder;
+
+use super::*;
 
 impl FormatterBuilder {
     pub fn from_leading_config_comments(input: &str) -> Self {
-        let mut config = Config::default();
+        let mut config = Config {
+            max_width: None,
+            ..Config::sichanghe_opinion()
+        };
 
         let opener = "<!-- :";
         let closer = "-->";
@@ -28,8 +32,16 @@ impl FormatterBuilder {
     }
 }
 
+fn init_tracing() {
+    _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_ansi(true)
+        .try_init();
+}
+
 #[test]
 fn reformat() {
+    init_tracing();
     let input = r##"#  Hello World!
 1.  Hey [ there! ]
 2.  what's going on?
@@ -45,7 +57,7 @@ fn main() {}
 "##;
     let expected = r##"# Hello World!
 1. Hey [there!]
-2. what's going on?
+1. what's going on?
 
 <p> and a little bit of HTML </p>
 
@@ -54,7 +66,7 @@ fn main() {}
 ```
 [there!]: htts://example.com "Yoooo"
 "##;
-    let rewrite = rewrite_markdown(input).unwrap();
+    let rewrite = rewrite_markdown_sichanghe_opinion(input).unwrap();
     assert_eq!(rewrite, expected)
 }
 
@@ -71,6 +83,7 @@ pub(crate) fn get_test_files<P: AsRef<Path>>(
 
 #[test]
 fn check_markdown_formatting() {
+    init_tracing();
     let mut errors = 0;
 
     for file in get_test_files("tests/source", "md") {
@@ -85,7 +98,10 @@ fn check_markdown_formatting() {
 
         if formatted_input != expected_output {
             errors += 1;
-            eprintln!("error formatting {}", file.display());
+            eprintln!(
+                "error formatting {}. Formatted:\n{formatted_input}\n",
+                file.display()
+            );
         }
     }
 
@@ -94,6 +110,7 @@ fn check_markdown_formatting() {
 
 #[test]
 fn idempotence_test() {
+    init_tracing();
     let mut errors = 0;
 
     for file in get_test_files("tests/target", "md") {
@@ -102,6 +119,10 @@ fn idempotence_test() {
         let formatted_input = rewrite_markdown_with_builder(&input, builder).unwrap();
 
         if formatted_input != input {
+            eprintln!(
+                "Idempotency does not hold for {}. Formatted:\n{formatted_input}\n",
+                file.display()
+            );
             errors += 1;
         }
     }

@@ -65,21 +65,47 @@
 //! # Ok::<(), std::fmt::Error>(())
 //! ````
 
+use std::borrow::Cow;
+use std::collections::VecDeque;
+use std::fmt::Write;
+use std::iter::Peekable;
+use std::num::ParseIntError;
+use std::ops::Range;
+use std::str::FromStr;
+
+use itertools::{EitherOrBoth, Itertools};
+use pulldown_cmark::{
+    Alignment, CodeBlockKind, CowStr, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd,
+};
+use textwrap::Options as TextWrapOptions;
+use unicode_segmentation::UnicodeSegmentation;
+
 mod adapters;
 mod builder;
 mod config;
 mod escape;
 mod formatter;
+mod html_block;
 mod links;
-mod list;
+pub mod list;
 mod paragraph;
 mod table;
 #[cfg(test)]
 mod test;
 mod utils;
 
-pub use builder::FormatterBuilder;
-pub use formatter::MarkdownFormatter;
+use crate::{
+    adapters::LooseListExt, builder::CodeBlockFormatter, formatter::FormatState, table::TableState,
+    utils::unicode_str_width,
+};
+pub use crate::{
+    builder::FormatterBuilder,
+    config::Config,
+    formatter::MarkdownFormatter,
+    html_block::PreservingHtmlBlock,
+    list::{ListMarker, OrderedListMarker, ParseListMarkerError, UnorderedListMarker},
+    paragraph::{Paragraph, ParagraphFormatter},
+};
 
 /// Reformat a markdown snippet with all the default settings.
 ///
@@ -106,6 +132,35 @@ pub use formatter::MarkdownFormatter;
 /// ```
 pub fn rewrite_markdown(input: &str) -> Result<String, std::fmt::Error> {
     rewrite_markdown_with_builder(input, FormatterBuilder::default())
+}
+
+/// Reformat a markdown snippet based on Steven Hé (Sīchàng)'s opinion.
+///
+/// ```rust
+/// # use markdown_fmt::rewrite_markdown_sichanghe_opinion;
+/// let markdown = r##"  #   Learn Rust Checklist!
+/// 1. Read [The Book]
+///  2.  Watch tutorials
+///   3.   Write some code!
+///
+/// [The Book]: https://doc.rust-lang.org/book/
+/// "##;
+///
+/// let formatted_markdown = r##"# Learn Rust Checklist!
+/// 1. Read [The Book]
+/// 1. Watch tutorials
+/// 1. Write some code!
+///
+/// [The Book]: https://doc.rust-lang.org/book/
+/// "##;
+///
+/// let output = rewrite_markdown_sichanghe_opinion(markdown).unwrap();
+/// assert_eq!(output, formatted_markdown);
+/// ```
+pub fn rewrite_markdown_sichanghe_opinion(input: &str) -> Result<String, std::fmt::Error> {
+    let mut builder = FormatterBuilder::default();
+    builder.sichanghe_config();
+    rewrite_markdown_with_builder(input, builder)
 }
 
 /// Reformat a markdown snippet with user specified settings
@@ -136,6 +191,7 @@ pub fn rewrite_markdown_with_builder(
     input: &str,
     builder: FormatterBuilder,
 ) -> Result<String, std::fmt::Error> {
+    tracing::trace!(?builder);
     let formatter = builder.build();
     formatter.format(input)
 }

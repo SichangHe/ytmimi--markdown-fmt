@@ -1,8 +1,8 @@
-use super::formatter::FormatState;
+use super::*;
 
 const ATX_HEADER_ESCAPES: [&str; 6] = ["# ", "## ", "### ", "#### ", "##### ", "###### "];
 
-impl<'i, F, I> FormatState<'i, F, I>
+impl<'i, F, I, P, H> FormatState<'i, F, I, P, H>
 where
     I: Iterator,
 {

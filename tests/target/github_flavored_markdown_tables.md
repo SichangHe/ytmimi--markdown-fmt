@@ -5,28 +5,28 @@
 | ----- | ------------------------------ |
 | val   | x                              |
 
-* | table | heading is longer than content (in list) |
-  | ----- | ---------------------------------------- |
-  | val   | x                                        |
+- | table | heading is longer than content (in list) |
+    | ----- | ---------------------------------------- |
+    | val   | x                                        |
 
 | table    | heading is shorter than content                                                                                             |
 | -------- | --------------------------------------------------------------------------------------------------------------------------- |
 | long val | Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. |
 
 
-* | table    | heading is shorter than content                                                                                             |
-  | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-  | long val | Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. |
+- | table    | heading is shorter than content                                                                                             |
+    | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+    | long val | Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. |
 
 
-> * | table | heading is longer than content (in list) |
->   | ----- | ---------------------------------------- |
->   | val   | x                                        |
+> - | table | heading is longer than content (in list) |
+>     | ----- | ---------------------------------------- |
+>     | val   | x                                        |
 
 
-> * | table    | heading is shorter than content                                                                                             |
->   | -------- | --------------------------------------------------------------------------------------------------------------------------- |
->   | long val | Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. |
+> - | table    | heading is shorter than content                                                                                             |
+>     | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+>     | long val | Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. |
 
 
 <!-- Some examples with unicode chars with different widths -->

@@ -1,9 +1,4 @@
-use crate::utils::unicode_str_width;
-use itertools::{EitherOrBoth, Itertools};
-use pulldown_cmark::Alignment;
-use std::borrow::Cow;
-use std::fmt::Write;
-use unicode_segmentation::UnicodeSegmentation;
+use super::*;
 
 pub(super) struct TableState<'a> {
     /// Alignment markers for HTML rendering
