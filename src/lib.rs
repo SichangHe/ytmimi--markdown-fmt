@@ -1,13 +1,14 @@
-//! Easily format Markdown. [markdown_fmt] supports [CommonMark] and [GitHub Flavored Markdown].
+//! Easily format Markdown.
+//! [fmtm_ytmimi_markdown_fmt] supports [CommonMark] and [GitHub Flavored Markdown].
 //!
-//! [markdown_fmt]: index.html
+//! [fmtm_ytmimi_markdown_fmt]: index.html
 //! [CommonMark]: https://spec.commonmark.org/
 //! [GitHub Flavored Markdown]: https://github.github.com/gfm/
 //!
 //! # Getting Started
 //!
 //! ```rust
-//! use markdown_fmt::rewrite_markdown;
+//! use fmtm_ytmimi_markdown_fmt::rewrite_markdown;
 //!
 //! let markdown = r##" # Getting Started
 //! 1. numbered lists
@@ -29,7 +30,9 @@
 //! The builder gives you more control to configure Markdown formatting.
 //!
 //! ````rust
-//! use markdown_fmt::{rewrite_markdown, rewrite_markdown_with_builder, FormatterBuilder};
+//! use fmtm_ytmimi_markdown_fmt::{
+//!     rewrite_markdown, rewrite_markdown_with_builder, FormatterBuilder,
+//! };
 //!
 //! let builder = FormatterBuilder::with_code_block_formatter(|info_string, code_block| {
 //!     match info_string.to_lowercase().as_str() {
@@ -110,7 +113,7 @@ pub use crate::{
 /// Reformat a markdown snippet with all the default settings.
 ///
 /// ```rust
-/// # use markdown_fmt::rewrite_markdown;
+/// # use fmtm_ytmimi_markdown_fmt::rewrite_markdown;
 /// let markdown = r##"  #   Learn Rust Checklist!
 /// 1. Read [The Book]
 ///  2.  Watch tutorials
@@ -137,7 +140,7 @@ pub fn rewrite_markdown(input: &str) -> Result<String, std::fmt::Error> {
 /// Reformat a markdown snippet based on Steven Hé (Sīchàng)'s opinion.
 ///
 /// ```rust
-/// # use markdown_fmt::rewrite_markdown_sichanghe_opinion;
+/// # use fmtm_ytmimi_markdown_fmt::rewrite_markdown_sichanghe_opinion;
 /// let markdown = r##"  #   Learn Rust Checklist!
 /// 1. Read [The Book]
 ///  2.  Watch tutorials
@@ -166,7 +169,7 @@ pub fn rewrite_markdown_sichanghe_opinion(input: &str) -> Result<String, std::fm
 /// Reformat a markdown snippet with user specified settings
 ///
 /// ```rust
-/// # use markdown_fmt::{rewrite_markdown_with_builder, FormatterBuilder};
+/// # use fmtm_ytmimi_markdown_fmt::{rewrite_markdown_with_builder, FormatterBuilder};
 /// let markdown = r##"  #   Learn Rust Checklist!
 /// 1. Read [The Book]
 ///  2.  Watch tutorials

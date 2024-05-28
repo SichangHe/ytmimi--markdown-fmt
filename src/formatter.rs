@@ -16,7 +16,7 @@ impl MarkdownFormatter {
     /// Format Markdown input
     ///
     /// ```rust
-    /// # use markdown_fmt::FormatterBuilder;
+    /// # use fmtm_ytmimi_markdown_fmt::FormatterBuilder;
     /// let builder = FormatterBuilder::default();
     /// let formatter = builder.build();
     /// let input = "   #  Header! ";
@@ -31,7 +31,7 @@ impl MarkdownFormatter {
     /// format paragraphs, and `H` to format HTML blocks.
     ///
     /// ```rust
-    /// # use markdown_fmt::{FormatterBuilder, Paragraph, PreservingHtmlBlock};
+    /// # use fmtm_ytmimi_markdown_fmt::{FormatterBuilder, Paragraph, PreservingHtmlBlock};
     /// let builder = FormatterBuilder::default();
     /// let formatter = builder.build();
     /// let input = "   #  Header! ";
