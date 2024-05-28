@@ -12,7 +12,7 @@ impl FormatterBuilder {
     /// Create a [FormatterBuilder] with custom [`Config`].
     ///
     /// ```rust
-    /// # use markdown_fmt::{Config, FormatterBuilder};
+    /// # use fmtm_ytmimi_markdown_fmt::{Config, FormatterBuilder};
     /// let builder = FormatterBuilder::with_config(Config {
     ///     max_width: Some(80),
     ///     ..Default::default()
@@ -32,8 +32,8 @@ impl FormatterBuilder {
     /// the [`info string`] and the complete code snippet
     ///
     /// ```rust
-    /// # use markdown_fmt::MarkdownFormatter;
-    /// # use markdown_fmt::FormatterBuilder;
+    /// # use fmtm_ytmimi_markdown_fmt::MarkdownFormatter;
+    /// # use fmtm_ytmimi_markdown_fmt::FormatterBuilder;
     /// let builder = FormatterBuilder::with_code_block_formatter(|info_string, code_block| {
     ///     // Set the code block formatting logic
     ///     match info_string.to_lowercase().as_str() {
@@ -59,8 +59,8 @@ impl FormatterBuilder {
     /// Build a [MarkdownFormatter](crate::MarkdownFormatter)
     ///
     /// ```rust
-    /// # use markdown_fmt::MarkdownFormatter;
-    /// # use markdown_fmt::FormatterBuilder;
+    /// # use fmtm_ytmimi_markdown_fmt::MarkdownFormatter;
+    /// # use fmtm_ytmimi_markdown_fmt::FormatterBuilder;
     /// let builder = FormatterBuilder::default();
     /// let formatter: MarkdownFormatter = builder.build();
     /// ```

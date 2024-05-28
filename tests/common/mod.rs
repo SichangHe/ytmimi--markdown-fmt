@@ -5,7 +5,9 @@ pub fn check_formatted_markdown<'a>(
     input: &'a str,
     expected_output: &str,
 ) -> std::borrow::Cow<'a, str> {
-    let formatted = markdown_fmt::rewrite_markdown(input).expect("formatting won't fail");
+    let formatted =
+        fmtm_ytmimi_markdown_fmt::rewrite_markdown(input).expect("formatting won't fail");
+
     assert_eq!(formatted, expected_output);
     formatted.into()
 }
