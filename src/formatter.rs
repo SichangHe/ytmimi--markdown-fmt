@@ -144,6 +144,7 @@ impl MarkdownFormatter {
 
 type ReferenceLinkDefinition = (String, String, Option<(String, char)>, Range<usize>);
 
+// TODO: Merge all this formatter madness into a single trait.
 pub(crate) struct FormatState<'i, F, I, P, H>
 where
     I: Iterator,
@@ -677,25 +678,20 @@ where
                     self.end_tag(*tag, range)?;
                     self.check_needs_indent(&event);
                 }
-                // TODO: Distinguish math.
-                Event::Text(ref parsed_text)
-                | Event::InlineMath(ref parsed_text)
-                | Event::DisplayMath(ref parsed_text) => {
+                // TODO: Format display math with its own buffer.
+                Event::Text(ref parsed_text) | Event::DisplayMath(ref parsed_text) => {
                     last_position = range.end;
                     let starts_with_escape = self.input[..range.start].ends_with('\\');
                     let newlines = self.count_newlines(&range);
                     let text_from_source = &self.input[range];
-                    let mut text = if text_from_source.is_empty() {
+                    let mut text = if text_from_source.is_empty() && !self.in_html_block() {
                         // This seems to happen when the parsed text is whitespace only.
-                        // To preserve leading whitespace use the parsed text instead.
+                        // To preserve leading whitespace outside of HTML blocks,
+                        // use the parsed text instead.
                         parsed_text.as_ref()
                     } else {
                         text_from_source
                     };
-
-                    if self.in_html_block() {
-                        text = text.trim_start_matches(' ');
-                    }
 
                     if self.in_link_or_image() && self.trim_link_or_image_start {
                         // Trim leading whitespace from reference links or images
@@ -713,7 +709,6 @@ where
 
                     if self.needs_indent {
                         self.write_newlines(newlines)?;
-                        self.needs_indent = false;
                     }
 
                     if starts_with_escape || self.needs_escape(text) {
@@ -760,12 +755,12 @@ where
                     write!(self, "{}", html)?; // Write HTML as is.
                     self.check_needs_indent(&event);
                 }
-                Event::InlineHtml(_) => {
+                Event::InlineHtml(_) | Event::InlineMath(_) => {
                     let newlines = self.count_newlines(&range);
                     if self.needs_indent {
                         self.write_newlines(newlines)?;
                     }
-                    write!(self, "{}", &self.input[range].trim_end_matches('\n'))?;
+                    self.write_str(self.input[range].trim_end_matches('\n'))?;
                     self.check_needs_indent(&event);
                 }
                 Event::Rule => {
@@ -1110,7 +1105,7 @@ where
                 }
             }
             Tag::HtmlBlock => {
-                if matches!(self.events.peek(), Some((Event::End(TagEnd::Paragraph), _))) {
+                if matches!(self.peek(), Some(Event::End(TagEnd::Paragraph))) {
                     tracing::debug!("HTML block start before paragraph end.");
                     // NOTE: Pulldown-CMark has a bug where it starts an HTML
                     // block before ending a paragraph.
