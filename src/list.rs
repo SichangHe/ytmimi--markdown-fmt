@@ -200,7 +200,7 @@ impl std::str::FromStr for ListMarker {
 
         let number: usize = s[..offset].parse()?;
         let zero_padding = if number != 0 {
-            s[..offset].bytes().take_while(|b| *b == b'0').count()
+            s[..offset].chars().take_while(|b| *b == '0').count()
         } else {
             0
         };

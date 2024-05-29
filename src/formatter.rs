@@ -374,7 +374,7 @@ where
             self.input[self.last_position..range.end].trim_end_matches('\n')
         };
 
-        snippet.bytes().filter(|b| *b == b'\n').count()
+        snippet.chars().filter(|char| *char == '\n').count()
     }
 
     fn write_indentation(&mut self, trim_trailing_whiltespace: bool) -> std::fmt::Result {
@@ -666,8 +666,8 @@ where
             let mut last_position = self.input[..range.end]
                 .char_indices()
                 .rev()
-                .find(|(_, b)| !b.is_whitespace())
-                .map(|(i, _)| i)
+                .find(|(_, char)| !char.is_whitespace())
+                .map(|(index, _)| index)
                 .unwrap_or(0);
 
             match event {
@@ -871,8 +871,7 @@ where
                         write!(self, ">")?;
                         self.indentation.push(">".into());
 
-                        let snippet = &self.input[range].trim_end();
-                        let newlines = snippet.bytes().filter(|b| matches!(b, b'\n')).count();
+                        let newlines = count_newlines(self.input[range].trim_end());
                         self.write_newlines(newlines)?;
                     }
                     Some((Event::Start(Tag::BlockQuote(_)), next_range)) => {
@@ -883,15 +882,13 @@ where
 
                         // Now add any missing newlines for empty block quotes between
                         // the current start and the next start
-                        let snippet = &self.input[range.start..next_range.start];
-                        let newlines = snippet.bytes().filter(|b| matches!(b, b'\n')).count();
+                        let newlines = count_newlines(&self.input[range.start..next_range.start]);
                         self.write_newlines(newlines)?;
                     }
                     Some((_, next_range)) => {
                         // Now add any missing newlines for empty block quotes between
                         // the current start and the next start
-                        let snippet = &self.input[range.start..next_range.start];
-                        let newlines = snippet.bytes().filter(|b| matches!(b, b'\n')).count();
+                        let newlines = count_newlines(&self.input[range.start..next_range.start]);
 
                         self.indentation.push("> ".into());
                         if newlines > 0 {
@@ -984,7 +981,7 @@ where
                         // -
                         //   foo
                         // ```
-                        snippet.bytes().filter(|b| matches!(b, b'\n')).count() > 0
+                        snippet.chars().any(|char| char == '\n')
                     }
                     None => false,
                 };
@@ -1365,6 +1362,11 @@ where
         };
         writeln!(self, "{marker}")
     }
+}
+
+/// Count the number of `\n` in a snippet.
+fn count_newlines(snippet: &str) -> usize {
+    snippet.chars().filter(|char| *char == '\n').count()
 }
 
 /// Find some marker that denotes the start of a markdown construct.

@@ -136,7 +136,11 @@ fn is_single_html_tag(html: &str) -> bool {
     // A hacky way to figure out if this is an inline html tag, but I think it works!
     html.starts_with('<')
         && html.ends_with('>')
-        && html.bytes().filter(|b| matches!(b, b'<' | b'>')).count() == 2
+        && html
+            .chars()
+            .filter(|char| matches!(char, '<' | '>'))
+            .count()
+            == 2
 }
 
 macro_rules! push_end_paragraph {
