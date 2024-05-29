@@ -664,8 +664,10 @@ where
         while let Some((event, range)) = self.events.next() {
             tracing::debug!(?event, ?range);
             let mut last_position = self.input[..range.end]
-                .bytes()
-                .rposition(|b| !b.is_ascii_whitespace())
+                .char_indices()
+                .rev()
+                .find(|(_, b)| !b.is_whitespace())
+                .map(|(i, _)| i)
                 .unwrap_or(0);
 
             match event {
