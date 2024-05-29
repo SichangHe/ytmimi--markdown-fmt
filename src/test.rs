@@ -63,6 +63,16 @@ fn main() {}
     assert_snapshot!(rewrite)
 }
 
+#[test]
+fn reformat_emoji() {
+    init_tracing();
+    let input = "Congratulations, that's really good news 🙂
+
+I have a couple of good firends there.";
+    let rewrite = rewrite_markdown_sichanghe_opinion(input).unwrap();
+    assert_snapshot!(rewrite)
+}
+
 pub(crate) fn get_test_files<P: AsRef<Path>>(
     path: P,
     extension: &str,
