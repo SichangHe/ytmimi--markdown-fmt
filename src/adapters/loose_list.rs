@@ -1,6 +1,6 @@
 use super::*;
 
-/// Conveniently turn any iterator that returns (Event, Range) into a LooseListAdapter
+/// Conveniently turn any iterator that returns ([Event], [Range]) into a [LooseListAdapter]
 pub(crate) trait LooseListExt<'input, I>
 where
     I: Iterator<Item = (Event<'input>, std::ops::Range<usize>)>,
@@ -299,10 +299,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::config::Config;
-    use crate::formatter::FormatState;
     use crate::test::get_test_files;
-    use std::borrow::Cow;
     use std::path::PathBuf;
 
     macro_rules! check_unchanged_events {
@@ -410,6 +407,7 @@ mod test {
     /// into loose lists.
     #[test]
     fn check_adapter_events() {
+        // TODO: Convert to use Insta.
         let mut file = PathBuf::from(std::file!());
         file.pop();
         let test_dir = file.join("test/loose_list");
@@ -451,10 +449,9 @@ mod test {
             let adapted_events = pulldown_cmark::Parser::new_ext(markdown, options)
                 .into_offset_iter()
                 .all_loose_lists();
-            let fmt_state = FormatState::new(
+            let fmt_state = <FormatState<DefaultFormatterCombination, _>>::new(
                 markdown,
                 Config::default(),
-                |_, s| s,
                 adapted_events,
                 vec![],
             );

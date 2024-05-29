@@ -8,40 +8,50 @@
 //! # Getting Started
 //!
 //! ```rust
-//! use fmtm_ytmimi_markdown_fmt::rewrite_markdown;
+//! use fmtm_ytmimi_markdown_fmt::MarkdownFormatter;
 //!
 //! let markdown = r##" # Getting Started
 //! 1. numbered lists
 //! 1.  are easy!
 //! "##;
 //!
-//! let formatted = r##"# Getting Started
+//! let expected = r##"# Getting Started
 //! 1. numbered lists
 //! 1. are easy!
 //! "##;
 //!
-//! let output = rewrite_markdown(markdown)?;
-//! # assert_eq!(output, formatted);
+//! let output = MarkdownFormatter::default().format(markdown)?;
+//! assert_eq!(output, expected);
 //! # Ok::<(), std::fmt::Error>(())
 //! ```
 //!
-//! # Using the [Builder](builder::FormatterBuilder)
+//! # Using [`MarkdownFormatter`] as a builder
 //!
-//! The builder gives you more control to configure Markdown formatting.
-//!
+//! The formatter gives you control to configure Markdown formatting.
 //! ````rust
-//! use fmtm_ytmimi_markdown_fmt::{
-//!     rewrite_markdown, rewrite_markdown_with_builder, FormatterBuilder,
-//! };
-//!
-//! let builder = FormatterBuilder::with_code_block_formatter(|info_string, code_block| {
-//!     match info_string.to_lowercase().as_str() {
-//!         "markdown" => rewrite_markdown(&code_block).unwrap_or(code_block),
-//!         _ => code_block
+//! use fmtm_ytmimi_markdown_fmt::*;
+//! #[derive(Default)]
+//! struct CodeBlockFormatter;
+//! impl FormatterFn for CodeBlockFormatter {
+//!     fn format(
+//!         &mut self,
+//!         buffer_type: BufferType,
+//!         _max_width: Option<usize>,
+//!         input: String,
+//!     ) -> String {
+//!         let BufferType::CodeBlock { info } = buffer_type else {
+//!             unreachable!();
+//!         };
+//!         match info {
+//!             Some(info) if info.as_ref() == "markdown" => {
+//!                 MarkdownFormatter::default().format(&input).unwrap_or(input)
+//!             }
+//!             _ => input,
+//!         }
 //!     }
-//! });
+//! }
 //!
-//! let markdown = r##" # Using the Builder
+//! let input = r##" # Using the Builder
 //! + markdown code block nested in a list
 //!   ```markdown
 //!   A nested markdown snippet!
@@ -52,29 +62,35 @@
 //!    ```
 //! "##;
 //!
-//! let formatted = r##"# Using the Builder
-//! + markdown code block nested in a list
-//!   ```markdown
-//!   A nested markdown snippet!
+//! let expected = r##"# Using the Builder
+//! - markdown code block nested in a list
+//!     ```markdown
+//!     A nested markdown snippet!
 //!
-//!   * unordered lists
-//!     are also pretty easy!
-//!   - `-` or `+` can also be used as unordered list markers.
-//!   ```
+//!     * unordered lists
+//!       are also pretty easy!
+//!     - `-` or `+` can also be used as unordered list markers.
+//!     ```
 //! "##;
 //!
-//! let output = rewrite_markdown_with_builder(markdown, builder)?;
-//! # assert_eq!(output, formatted);
+//! type MyFormatter = MarkdownFormatter<
+//!     FormatterCombination<
+//!         FnFormatter<CodeBlockFormatter>,
+//!         TrimTo4Indent,
+//!         TrimTo4Indent,
+//!         Paragraph,
+//!     >,
+//! >;
+//! let output =
+//!     MyFormatter::with_config_and_external_formatter(Config::sichanghe_opinion()).format(input)?;
+//! assert_eq!(output, expected);
 //! # Ok::<(), std::fmt::Error>(())
 //! ````
 
-use std::borrow::Cow;
-use std::collections::VecDeque;
-use std::fmt::Write;
-use std::iter::Peekable;
-use std::num::ParseIntError;
-use std::ops::Range;
-use std::str::FromStr;
+use std::{
+    borrow::Cow, collections::VecDeque, fmt::Write, iter::Peekable, marker::PhantomData,
+    num::ParseIntError, ops::Range, str::FromStr,
+};
 
 use itertools::{EitherOrBoth, Itertools};
 use pulldown_cmark::{
@@ -87,114 +103,28 @@ mod adapters;
 mod builder;
 mod config;
 mod escape;
+mod external_formatter;
 mod formatter;
-mod html_block;
 mod links;
 pub mod list;
-mod paragraph;
 mod table;
 #[cfg(test)]
 mod test;
 mod utils;
 
 use crate::{
-    adapters::LooseListExt, builder::CodeBlockFormatter, formatter::FormatState, table::TableState,
+    adapters::{LooseListExt, SequentialBlockExt},
+    formatter::FormatState,
+    table::TableState,
     utils::unicode_str_width,
 };
 pub use crate::{
-    builder::FormatterBuilder,
+    builder::MarkdownFormatter,
     config::Config,
-    formatter::MarkdownFormatter,
-    html_block::PreservingHtmlBlock,
+    external_formatter::{
+        BufferType, DefaultFormatterCombination, ExternalFormatter, FnFormatter,
+        FormatterCombination, FormatterFn, FormattingContext, Paragraph, PreservingBuffer,
+        TrimTo4Indent,
+    },
     list::{ListMarker, OrderedListMarker, ParseListMarkerError, UnorderedListMarker},
-    paragraph::{Paragraph, ParagraphFormatter},
 };
-
-/// Reformat a markdown snippet with all the default settings.
-///
-/// ```rust
-/// # use fmtm_ytmimi_markdown_fmt::rewrite_markdown;
-/// let markdown = r##"  #   Learn Rust Checklist!
-/// 1. Read [The Book]
-///  2.  Watch tutorials
-///   3.   Write some code!
-///
-/// [The Book]: https://doc.rust-lang.org/book/
-/// "##;
-///
-/// let formatted_markdown = r##"# Learn Rust Checklist!
-/// 1. Read [The Book]
-/// 2. Watch tutorials
-/// 3. Write some code!
-///
-/// [The Book]: https://doc.rust-lang.org/book/
-/// "##;
-///
-/// let output = rewrite_markdown(markdown).unwrap();
-/// assert_eq!(output, formatted_markdown);
-/// ```
-pub fn rewrite_markdown(input: &str) -> Result<String, std::fmt::Error> {
-    rewrite_markdown_with_builder(input, FormatterBuilder::default())
-}
-
-/// Reformat a markdown snippet based on Steven Hé (Sīchàng)'s opinion.
-///
-/// ```rust
-/// # use fmtm_ytmimi_markdown_fmt::rewrite_markdown_sichanghe_opinion;
-/// let markdown = r##"  #   Learn Rust Checklist!
-/// 1. Read [The Book]
-///  2.  Watch tutorials
-///   3.   Write some code!
-///
-/// [The Book]: https://doc.rust-lang.org/book/
-/// "##;
-///
-/// let formatted_markdown = r##"# Learn Rust Checklist!
-/// 1. Read [The Book]
-/// 1. Watch tutorials
-/// 1. Write some code!
-///
-/// [The Book]: https://doc.rust-lang.org/book/
-/// "##;
-///
-/// let output = rewrite_markdown_sichanghe_opinion(markdown).unwrap();
-/// assert_eq!(output, formatted_markdown);
-/// ```
-pub fn rewrite_markdown_sichanghe_opinion(input: &str) -> Result<String, std::fmt::Error> {
-    let mut builder = FormatterBuilder::default();
-    builder.sichanghe_config();
-    rewrite_markdown_with_builder(input, builder)
-}
-
-/// Reformat a markdown snippet with user specified settings
-///
-/// ```rust
-/// # use fmtm_ytmimi_markdown_fmt::{rewrite_markdown_with_builder, FormatterBuilder};
-/// let markdown = r##"  #   Learn Rust Checklist!
-/// 1. Read [The Book]
-///  2.  Watch tutorials
-///   3.   Write some code!
-///
-/// [The Book]: https://doc.rust-lang.org/book/
-/// "##;
-///
-/// let formatted_markdown = r##"# Learn Rust Checklist!
-/// 1. Read [The Book]
-/// 2. Watch tutorials
-/// 3. Write some code!
-///
-/// [The Book]: https://doc.rust-lang.org/book/
-/// "##;
-///
-/// let builder = FormatterBuilder::default();
-/// let output = rewrite_markdown_with_builder(markdown, builder).unwrap();
-/// assert_eq!(output, formatted_markdown);
-/// ```
-pub fn rewrite_markdown_with_builder(
-    input: &str,
-    builder: FormatterBuilder,
-) -> Result<String, std::fmt::Error> {
-    tracing::trace!(?builder);
-    let formatter = builder.build();
-    formatter.format(input)
-}
